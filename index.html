@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AEK Video Analysis</title>
+<script>/* light or dark background chosen by the user, kept on this device */try{var t=localStorage.getItem("vp-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#f5c400">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -242,6 +243,8 @@ td.cell.mdtint{background:var(--match-soft)}
 .notecard .nh span{color:var(--muted);font-size:12px}
 .notecard textarea{background:var(--surface2);min-height:90px}
 @media (max-width:760px){.howto{grid-template-columns:1fr}}
+.topright{display:flex;align-items:center;gap:8px}
+.themebtn{display:inline-flex;align-items:center;gap:6px;height:36px;font-weight:600}
 .pstrip-k{display:flex;flex-wrap:wrap;gap:6px}
 .hmode{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
 .hmode .tabs button{padding:6px 12px}
@@ -263,10 +266,11 @@ td.cell.mdtint{background:var(--match-soft)}
 <div class="wrap">
   <header class="top">
     <div class="brandwrap"><img class="crest" src="logo.png" alt="AEK Athens FC"><div class="brand"><span class="club">AEK Athens FC · Performance Department</span><h1>Video Analysis Planner</h1></div></div>
+    <div class="topright"><button class="btn themebtn" id="btnTheme" aria-label="Switch light or dark background"></button>
     <div class="tabs" role="tablist">
       <button role="tab" id="tab-plan" aria-selected="true">Week planner</button>
       <button role="tab" id="tab-hist" aria-selected="false">History</button>
-    </div>
+    </div></div>
   </header>
   <main id="view"></main>
   <div class="bar"><p class="status" id="status">Loading…</p><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="btnPdf">PDF report</button><button class="btn" id="btnExport">Export backup</button><button class="btn" id="btnImport">Import backup</button><input type="file" id="fileIn" accept=".json,application/json" hidden></span></div>
@@ -1217,6 +1221,11 @@ function makePdf(){
   setStatus("Data is saved in this browser on this device. Export a backup regularly.");
   render();
 })();
+/* light / dark background */
+function isDark(){const t=document.documentElement.getAttribute("data-theme");return t?t==="dark":matchMedia("(prefers-color-scheme: dark)").matches}
+function drawThemeBtn(){$("#btnTheme").innerHTML=isDark()?"☀ Light":"☾ Dark";$("#btnTheme").title=isDark()?"Switch to light background":"Switch to dark background"}
+$("#btnTheme").onclick=()=>{const t=isDark()?"light":"dark";document.documentElement.setAttribute("data-theme",t);try{localStorage.setItem("vp-theme",t)}catch(e){}drawThemeBtn()};
+drawThemeBtn();
 $("#btnExport").onclick=exportData;
 $("#btnPdf").onclick=makePdf;
 $("#btnImport").onclick=()=>$("#fileIn").click();
