@@ -245,6 +245,12 @@ td.cell.mdtint{background:var(--match-soft)}
 @media (max-width:760px){.howto{grid-template-columns:1fr}}
 .topright{display:flex;align-items:center;gap:8px}
 .themebtn{display:inline-flex;align-items:center;gap:6px;height:36px;font-weight:600}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.segb{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);border-radius:999px;padding:4px 12px 4px 5px;font:500 13px var(--f-body);cursor:pointer}
+.segb .mark{width:20px;height:20px;font-size:10px}
+.segb.on{border:1.5px solid var(--accent);background:var(--accent-soft);font-weight:600}
+td.cell button.gcell{position:relative}
+.gcount{position:absolute;right:5px;bottom:3px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--def-soft);color:var(--def);font:600 10px/16px var(--f-mono);text-align:center}
 .pstrip-k{display:flex;flex-wrap:wrap;gap:6px}
 .hmode{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
 .hmode .tabs button{padding:6px 12px}
@@ -792,14 +798,14 @@ function renderPlanner(){
       h+=`<tr class="${K.cls}row"><th><button class="rowname" data-edit="${r.id}" aria-label="Edit ${esc(r.name)}">${esc(r.name)}<span class="pen">✎</span></button></th>`;
       m.days.forEach((d,i)=>{const key=r.id+"|"+i, v=m.marks?.[key];
         const label=`${K.n}, ${r.name}, ${DAYS[i]}: ${v==="done"?"done":v==="plan"?"planned":"not planned"}`;
-        h+=`<td class="cell ${d.md==="MD"?"mdtint":""}"><button data-key="${key}" aria-label="${esc(label)}">${markHtml(v)}</button></td>`});
+        h+=`<td class="cell ${d.md==="MD"?"mdtint":""}">${cellBtn(m,kind,key,label)}</td>`});
       h+=`</tr>`;
     }
     h+=`<tr><th><button class="rowname add" data-add="${kind}">+ Add ${K.row}</button></th>${m.days.map(()=>"<td></td>").join("")}</tr>`;
   }
   h+=`</tbody></table></div>
   <div class="howto">
-    <div class="hcard"><h4>Tap a cell</h4><div class="steps"><span class="step"><i class="mark plan">P</i>Planned</span><span class="arr">→</span><span class="step"><i class="mark done">✓</i>Done</span><span class="arr">→</span><span class="step"><i class="mark blank"></i>Empty</span></div></div>
+    <div class="hcard"><h4>Tap a cell</h4><div class="steps"><span class="step"><i class="mark plan">P</i>Planned</span><span class="arr">→</span><span class="step"><i class="mark done">✓</i>Done</span><span class="arr">→</span><span class="step"><i class="mark blank"></i>Empty</span></div><p class="histnote" style="margin:0">Group video: a tap opens the window to set the status and add players.</p></div>
     <div class="hcard"><h4>Tap a name</h4><p><span class="hicon">✎</span>Rename or remove a player or team unit</p></div>
     <div class="hcard"><h4>Tap a day</h4><p><span class="md hmd">MD</span>Set MD label, session or match. Setting MD fills the rest of the week.</p></div>
   </div>
@@ -830,6 +836,53 @@ function autoFill(m){
     else if(b!==null)d.md="MD-"+b;
     else if(a!==null)d.md="MD+"+a;
   });
+}
+
+/* ---------- group video: status of the unit + the players who took part ---------- */
+const gpOf=(m,key)=>((m.gp||{})[key])||[];
+function cellBtn(m,kind,key,label){
+  const v=m.marks?.[key];
+  if(kind!=="grp")return `<button data-key="${key}" aria-label="${esc(label)}">${markHtml(v)}</button>`;
+  const n=gpOf(m,key).length;
+  return `<button class="gcell" data-gkey="${key}" aria-label="${esc(label+(n?", "+n+" players":""))}">${markHtml(v)}${n?`<span class="gcount" title="${n} players">${n}</span>`:""}</button>`;
+}
+function openGroup(key){
+  const m=cur(); if(!m)return;
+  const [uid,ds]=key.split("|"), i=+ds;
+  m.marks=m.marks||{}; m.gp=m.gp||{};
+  const changed=()=>{if(m.gp[key]&&!m.gp[key].length)delete m.gp[key];save();render();draw()};
+  const draw=()=>{
+    const arr=m.gp[key]||[], v=m.marks[key]||"", used=new Set(arr.map(e=>e.p)), d=m.days[i]||{};
+    showModal(`<h3>${esc(nameOf(uid))}</h3>
+      <p class="sub">Group video · ${DAYS[i]}${m.start?" · "+fmt(addDays(m.start,i)):""}${d.md?" · "+esc(d.md):""}</p>
+      <div class="field"><label>Status</label><div class="seg">${[["","Empty"],["plan","Planned"],["done","Done"]].map(([k,l])=>`<button class="segb ${v===k?"on":""}" data-st="${k}">${k==="plan"?`<i class="mark plan">P</i>`:k==="done"?`<i class="mark done">✓</i>`:`<i class="mark blank"></i>`}${l}</button>`).join("")}</div></div>
+      <div class="field"><label>Players in this group video</label>
+        <div class="vlist" id="glist">${arr.length?arr.map((e,j)=>`<div class="vitem"><b>${esc(nameOf(e.p))}</b><button class="st ${e.st}" data-j="${j}" title="Switch planned / done">${e.st==="done"?"✓ Done":"P Planned"}</button><button class="rm" data-rm="${j}" aria-label="Remove ${esc(nameOf(e.p))}">×</button></div>`).join(""):`<p class="histnote" style="margin:0">No players added yet. Pick a player below.</p>`}</div>
+      </div>
+      <div class="addrow"><select id="gsel" aria-label="Add player"><option value="">Add player…</option>${lists.ind.map(p=>`<option value="${p.id}" ${used.has(p.id)?"disabled":""}>${esc(p.name)}</option>`).join("")}</select><button class="btn" id="gAddP">Add planned</button><button class="btn primary" id="gAddD">Add done</button></div>
+      <p class="histnote" style="margin:0">Empty clears this group video and its player list.</p>
+      <div class="actions"><span></span><button class="btn primary" id="gClose">Done</button></div>`);
+    document.querySelectorAll(".segb").forEach(b=>b.onclick=()=>{const st=b.dataset.st;
+      if(!st){delete m.marks[key];delete m.gp[key]}
+      else{m.marks[key]=st;if(st==="done")(m.gp[key]||[]).forEach(e=>e.st="done")}
+      changed()});
+    const add=st=>{const pid=$("#gsel").value;if(!pid)return;(m.gp[key]=m.gp[key]||[]).push({p:pid,st});
+      if(st==="done")m.marks[key]="done";else if(!m.marks[key])m.marks[key]="plan";
+      changed();$("#gsel").focus()};
+    $("#gAddP").onclick=()=>add("plan"); $("#gAddD").onclick=()=>add("done");
+    $("#glist").onclick=e=>{const t=e.target.closest("button");if(!t)return;const a=m.gp[key];
+      if(t.dataset.j!==undefined){const x=a[+t.dataset.j];x.st=x.st==="done"?"plan":"done";if(x.st==="done")m.marks[key]="done"}
+      else if(t.dataset.rm!==undefined)a.splice(+t.dataset.rm,1);
+      changed()};
+    $("#gClose").onclick=()=>{closeModal();render()};
+    $("#scrim").onclick=e=>{if(e.target.id==="scrim"){closeModal();render()}};
+  };
+  draw();
+}
+function groupEntriesFor(pid){
+  const out=[];for(const m of sorted())for(const [k,arr] of Object.entries(m.gp||{})){const [u,d]=k.split("|");
+    arr.forEach(e=>{if(e.p===pid)out.push({m,d:+d,u,date:m.start?addDays(m.start,+d):"",st:e.st})})}
+  return out.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
 }
 
 /* ---------- players strip (planner + history) ---------- */
@@ -930,7 +983,7 @@ function renderHistory(){
       h+=`<tr class="${K.cls}row"><th><button class="rowname" data-hist="${id}">${esc(nameOf(id))}${gone?` <span class="gone">(removed)</span>`:""}</button></th>`;
       /* week view: same tap cycle as the planner (planned -> done -> empty) */
       if(byWk)m.days.forEach((dd,j)=>{const key=id+"|"+j,v=m.marks?.[key];
-        h+=`<td class="cell ${dd.md==="MD"?"mdtint":""}"><button data-key="${key}" aria-label="${esc(nameOf(id)+", "+DAYS[j]+": "+(v==="done"?"done":v==="plan"?"planned":"not planned"))}">${markHtml(v)}</button></td>`});
+        h+=`<td class="cell ${dd.md==="MD"?"mdtint":""}">${cellBtn(m,kind,key,nameOf(id)+", "+DAYS[j]+": "+(v==="done"?"done":v==="plan"?"planned":"not planned"))}</td>`});
       else per.forEach(([dn,pl])=>{h+=`<td>${heat(dn,pl)}</td>`});
       h+=`<td>${l4(id)}</td><td>${tot}</td><td class="last">${l?fmt(l)+` · ${d}d ago`:"&nbsp;"}</td><td><span class="pill ${s.c}">${s.t}</span></td></tr>`;
     }
@@ -964,6 +1017,8 @@ function openHistory(id){
   const forMatch=date=>{const j=date?matchIndex(date,ml):-1;return j<0?"":fmt(ml[j].date)+" "+oppText(ml[j].mt)};
   const rows=ents.map(e=>{const day=e.m.days[e.d]||{};return `<tr><td class="mono">${e.date?fmt(e.date)+" "+e.date.slice(0,4):""}</td><td>${DAYS[e.d]}</td><td>${esc(day.md||"")}</td><td>MC ${e.m.number}</td><td>${esc(forMatch(e.date))}</td><td>${e.st==="done"?`<span class="pill ok">Done</span>`:`<span class="pill warn">Planned</span>`}</td></tr>`}).join("");
   const removed=!lists[kind].some(x=>x.id===id);
+  const gents=kind==="ind"?groupEntriesFor(id):[];
+  const grows=gents.map(e=>`<tr><td class="mono">${e.date?fmt(e.date)+" "+e.date.slice(0,4):""}</td><td>${DAYS[e.d]}</td><td>${esc((e.m.days[e.d]||{}).md||"")}</td><td>${esc(nameOf(e.u))}</td><td>${e.st==="done"?`<span class="pill ok">Done</span>`:`<span class="pill warn">Planned</span>`}</td></tr>`).join("");
   showModal(`<h3>${esc(nameOf(id))}</h3><p class="sub">${KIND[kind].n} history${removed?" · removed from the list":""}</p>
     <div class="mini">
       <div><b>${done}</b><span>Videos done</span></div>
@@ -974,6 +1029,7 @@ function openHistory(id){
     </div>
     ${list.length?`<p class="histnote" style="margin:0">${ml.length?"Last matches (videos done after each MD)":"Last microcycles"}</p><div class="mcstrip">${strip}</div>`:""}
     <div class="scroller"><table class="elist"><thead><tr><th>Date</th><th>Day</th><th>MD</th><th>Microcycle</th><th>For match</th><th>Status</th></tr></thead><tbody>${rows||`<tr><td colspan="6" class="histnote">No video logged yet.</td></tr>`}</tbody></table></div>
+    ${kind==="ind"?`<p class="histnote" style="margin:0"><b>Group videos</b> · ${gents.filter(e=>e.st==="done").length} done</p><div class="scroller"><table class="elist"><thead><tr><th>Date</th><th>Day</th><th>MD</th><th>Team unit</th><th>Status</th></tr></thead><tbody>${grows||`<tr><td colspan="5" class="histnote">Not added to any group video yet.</td></tr>`}</tbody></table></div>`:""}
     <div class="actions">${removed?"<span></span>":`<button class="btn" id="hEdit">Rename</button>`}<button class="btn primary" id="hClose">Close</button></div>`,true);
   $("#hClose").onclick=closeModal;
   if(!removed)$("#hEdit").onclick=()=>openRow(id);
@@ -1059,6 +1115,7 @@ $("#view").addEventListener("click",e=>{
   if(t.id==="hm-wk"||t.id==="hm-mc"){hmode=t.id==="hm-wk"?"wk":"mc";try{localStorage.setItem("vp-hmode",hmode)}catch(e){}return render()}
   if(t.dataset.edit)return openRow(t.dataset.edit);
   if(t.dataset.add)return openRow(null,t.dataset.add);
+  if(t.dataset.gkey&&m)return openGroup(t.dataset.gkey);
   if(t.dataset.key&&m){m.marks=m.marks||{};cycleMark(m,t.dataset.key);save();
     const k=t.dataset.key; render(); const nb=document.querySelector(`button[data-key="${k}"]`); nb&&nb.focus();}
 });

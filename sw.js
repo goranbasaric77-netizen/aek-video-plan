@@ -1,6 +1,6 @@
 // AEK Video Analysis service worker. Bump CACHE on every release.
 // Does not touch localStorage, so coaches' data survives updates.
-const CACHE = "aek-video-2026-11-08k";
+const CACHE = "aek-video-2026-11-08l";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./logo.png"];
 
 self.addEventListener("install", e => {
