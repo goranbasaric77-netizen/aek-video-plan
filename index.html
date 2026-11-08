@@ -251,6 +251,19 @@ td.cell.mdtint{background:var(--match-soft)}
 .segb.on{border:1.5px solid var(--accent);background:var(--accent-soft);font-weight:600}
 td.cell button.gcell{position:relative}
 .gcount{position:absolute;right:5px;bottom:3px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--def-soft);color:var(--def);font:600 10px/16px var(--f-mono);text-align:center}
+.av{flex:none;display:inline-block;width:28px;height:28px;border-radius:50%;background-color:var(--accent-soft);background-size:185%;background-position:50% 7%;background-repeat:no-repeat;border:1px solid var(--line)}
+.av.ini{display:inline-grid;place-items:center;background:var(--surface2);color:var(--muted);font:600 11px var(--f-body)}
+.av.sm{width:24px;height:24px}
+.av.lg{width:64px;height:64px;border-width:2px;border-color:var(--accent)}
+.av.lg.ini{font-size:20px}
+.pcard{padding-left:8px!important}
+.pcard .av{width:30px;height:30px}
+.hhead{display:flex;align-items:center;gap:14px}
+.hhead .sub{margin:2px 0 0!important}
+.photorow{display:flex;align-items:center;gap:12px}
+.photorow select{flex:1}
+.moverow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.moverow .histnote{margin:0}
 .pstrip-k{display:flex;flex-wrap:wrap;gap:6px}
 .hmode{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
 .hmode .tabs button{padding:6px 12px}
@@ -795,7 +808,7 @@ function renderPlanner(){
     const K=KIND[kind];
     h+=`<tr class="grp ${K.cls}"><th>${K.n}</th>${m.days.map(()=>"<td></td>").join("")}</tr>`;
     for(const r of lists[kind]){
-      h+=`<tr class="${K.cls}row"><th><button class="rowname" data-edit="${r.id}" aria-label="Edit ${esc(r.name)}">${esc(r.name)}<span class="pen">✎</span></button></th>`;
+      h+=`<tr class="${K.cls}row"><th><button class="rowname" data-edit="${r.id}" aria-label="Edit ${esc(r.name)}">${kind==="ind"?avatar(r,"sm"):""}${esc(r.name)}<span class="pen">✎</span></button></th>`;
       m.days.forEach((d,i)=>{const key=r.id+"|"+i, v=m.marks?.[key];
         const label=`${K.n}, ${r.name}, ${DAYS[i]}: ${v==="done"?"done":v==="plan"?"planned":"not planned"}`;
         h+=`<td class="cell ${d.md==="MD"?"mdtint":""}">${cellBtn(m,kind,key,label)}</td>`});
@@ -838,6 +851,22 @@ function autoFill(m){
   });
 }
 
+/* ---------- player photos (photos/<key>.webp). The photo key is saved on the player itself,
+   so it moves with the player when the order or the name changes. ---------- */
+const PHOTOS=["alexiou","ariaga","balamotis","brignoli","gacinovic","georgiev","joaomario","jovic","kairinen","kaloskamis","koita","kutesa","likogiannis","majer","mantalos","marin","moukoudi","pilios","relvas","rota","sahabo","strakosha","varga","vida","vitalis","zine","zubkov"];
+const PHOTO_ALIAS={lykogiannis:"likogiannis",arriaga:"ariaga",zini:"zine",mario:"joaomario"};
+function autoPhoto(name){
+  const n=String(name||"").replace(/^\d+\s+/,"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const words=n.split(/\s+/).filter(Boolean).map(w=>w.replace(/[^a-z]/g,""));
+  const tries=[words.join(""),...words.slice().reverse()];
+  for(const t of tries){const k=PHOTO_ALIAS[t]||t;if(PHOTOS.includes(k))return k}
+  return "";
+}
+function playerObj(id){return lists.ind.find(x=>x.id===id)||{id,name:nameOf(id),photo:(lists.gonePh||{})[id]||""}}
+function initials(name){const w=String(name||"").replace(/^\d+\s+/,"").split(/\s+/).filter(Boolean);return ((w[0]||"")[0]||"").toUpperCase()+((w[1]||"")[0]||"").toUpperCase()}
+function avatar(pl,cls){if(!pl)return "";const c="av "+(cls||"");
+  return pl.photo?`<span class="${c}" style="background-image:url('photos/${esc(pl.photo)}.webp')" aria-hidden="true"></span>`:`<span class="${c} ini" aria-hidden="true">${esc(initials(pl.name))}</span>`}
+
 /* ---------- group video: status of the unit + the players who took part ---------- */
 const gpOf=(m,key)=>((m.gp||{})[key])||[];
 function cellBtn(m,kind,key,label){
@@ -857,7 +886,7 @@ function openGroup(key){
       <p class="sub">Group video · ${DAYS[i]}${m.start?" · "+fmt(addDays(m.start,i)):""}${d.md?" · "+esc(d.md):""}</p>
       <div class="field"><label>Status</label><div class="seg">${[["","Empty"],["plan","Planned"],["done","Done"]].map(([k,l])=>`<button class="segb ${v===k?"on":""}" data-st="${k}">${k==="plan"?`<i class="mark plan">P</i>`:k==="done"?`<i class="mark done">✓</i>`:`<i class="mark blank"></i>`}${l}</button>`).join("")}</div></div>
       <div class="field"><label>Players in this group video</label>
-        <div class="vlist" id="glist">${arr.length?arr.map((e,j)=>`<div class="vitem"><b>${esc(nameOf(e.p))}</b><button class="st ${e.st}" data-j="${j}" title="Switch planned / done">${e.st==="done"?"✓ Done":"P Planned"}</button><button class="rm" data-rm="${j}" aria-label="Remove ${esc(nameOf(e.p))}">×</button></div>`).join(""):`<p class="histnote" style="margin:0">No players added yet. Pick a player below.</p>`}</div>
+        <div class="vlist" id="glist">${arr.length?arr.map((e,j)=>`<div class="vitem">${avatar(playerObj(e.p),"sm")}<b>${esc(nameOf(e.p))}</b><button class="st ${e.st}" data-j="${j}" title="Switch planned / done">${e.st==="done"?"✓ Done":"P Planned"}</button><button class="rm" data-rm="${j}" aria-label="Remove ${esc(nameOf(e.p))}">×</button></div>`).join(""):`<p class="histnote" style="margin:0">No players added yet. Pick a player below.</p>`}</div>
       </div>
       <div class="addrow"><select id="gsel" aria-label="Add player"><option value="">Add player…</option>${lists.ind.map(p=>`<option value="${p.id}" ${used.has(p.id)?"disabled":""}>${esc(p.name)}</option>`).join("")}</select><button class="btn" id="gAddP">Add planned</button><button class="btn primary" id="gAddD">Add done</button></div>
       <p class="histnote" style="margin:0">Empty clears this group video and its player list.</p>
@@ -891,7 +920,7 @@ function playersStrip(m,ref,week,extra){
     <div class="plegend"><span><i class="dot ok"></i>0 to ${WATCH} days</span><span><i class="dot warn"></i>${WATCH+1} to ${GAP}</span><span><i class="dot bad"></i>Over ${GAP} days or never (–)</span>${week?`<span><i class="lg pl"></i>Planned this week</span><span><i class="lg dn"></i>Done this week</span>`:""}</div></div>${extra||""}<div class="pgrid">`;
   for(const p of lists.ind){const l=lastDone(p.id,ref),d=l?diffDays(l,ref):null,s=stat(d),[dn,pl]=m?countRow(m,p.id):[0,0];
     const mm=/^(\d+)\s+(.+)$/.exec(p.name), num=mm?mm[1]:"", nm=mm?mm[2]:p.name;
-    h+=`<button class="pcard ${s.c} ${dn?"dn":pl?"pl":""}" data-hist="${p.id}" aria-label="History of ${esc(p.name)}" title="${esc(p.name)}: ${d===null?"no individual video yet":"last video "+d+" days ago"}"><span class="pnum">${esc(num)}</span><span class="pname">${esc(nm)}</span>${d===null?`<span class="pdays none">–</span>`:`<span class="pdays">${d}d</span>`}</button>`}
+    h+=`<button class="pcard ${s.c} ${dn?"dn":pl?"pl":""}" data-hist="${p.id}" aria-label="History of ${esc(p.name)}" title="${esc(p.name)}: ${d===null?"no individual video yet":"last video "+d+" days ago"}">${avatar(p)}<span class="pnum">${esc(num)}</span><span class="pname">${esc(nm)}</span>${d===null?`<span class="pdays none">–</span>`:`<span class="pdays">${d}d</span>`}</button>`}
   return h+`</div></div>`;
 }
 
@@ -980,7 +1009,7 @@ function renderHistory(){
       const gone=!lists[kind].some(x=>x.id===id), per=rowCounts(id);
       let tot=0;list.forEach(c=>tot+=countRow(c,id)[0]);
       const l=lastDone(id,ref),d=l?diffDays(l,ref):null,s=stat(d);
-      h+=`<tr class="${K.cls}row"><th><button class="rowname" data-hist="${id}">${esc(nameOf(id))}${gone?` <span class="gone">(removed)</span>`:""}</button></th>`;
+      h+=`<tr class="${K.cls}row"><th><button class="rowname" data-hist="${id}">${kind==="ind"?avatar(playerObj(id),"sm"):""}${esc(nameOf(id))}${gone?` <span class="gone">(removed)</span>`:""}</button></th>`;
       /* week view: same tap cycle as the planner (planned -> done -> empty) */
       if(byWk)m.days.forEach((dd,j)=>{const key=id+"|"+j,v=m.marks?.[key];
         h+=`<td class="cell ${dd.md==="MD"?"mdtint":""}">${cellBtn(m,kind,key,nameOf(id)+", "+DAYS[j]+": "+(v==="done"?"done":v==="plan"?"planned":"not planned"))}</td>`});
@@ -1019,7 +1048,7 @@ function openHistory(id){
   const removed=!lists[kind].some(x=>x.id===id);
   const gents=kind==="ind"?groupEntriesFor(id):[];
   const grows=gents.map(e=>`<tr><td class="mono">${e.date?fmt(e.date)+" "+e.date.slice(0,4):""}</td><td>${DAYS[e.d]}</td><td>${esc((e.m.days[e.d]||{}).md||"")}</td><td>${esc(nameOf(e.u))}</td><td>${e.st==="done"?`<span class="pill ok">Done</span>`:`<span class="pill warn">Planned</span>`}</td></tr>`).join("");
-  showModal(`<h3>${esc(nameOf(id))}</h3><p class="sub">${KIND[kind].n} history${removed?" · removed from the list":""}</p>
+  showModal(`<div class="hhead">${kind==="ind"?avatar(playerObj(id),"lg"):""}<div><h3>${esc(nameOf(id))}</h3><p class="sub">${KIND[kind].n} history${removed?" · removed from the list":""}</p></div></div>
     <div class="mini">
       <div><b>${done}</b><span>Videos done</span></div>
       <div><b>${r4}</b><span>Done, last 4 microcycles</span></div>
@@ -1041,19 +1070,26 @@ function openRow(id,kind){
   const what=KIND[kind].row;
   showModal(`<h3>${isNew?"Add "+what:"Edit "+what}</h3>
     <div class="field"><label for="r-name">${kind==="ind"?"Number and name":"Unit name"}</label><input id="r-name" value="${esc(r.name)}" placeholder="${kind==="ind"?"e.g. 7 Pineda":"e.g. Back line + GK"}" autocomplete="off"></div>
-    ${isNew?"":`<p class="histnote">Renaming keeps all planned and done videos for this ${what}.</p>`}
+    ${kind==="ind"?`<div class="field"><label for="r-photo">Photo</label><div class="photorow"><span id="r-av">${avatar(r,"lg")}</span><select id="r-photo"><option value="">No photo (initials)</option>${PHOTOS.map(k=>`<option value="${k}" ${k===(isNew?"":r.photo)?"selected":""}>${k}</option>`).join("")}</select></div></div>`:""}
+    ${isNew?"":`<div class="field"><label>Order in the list</label><div class="moverow"><button class="btn" id="rUp" ${lst.indexOf(r)<=0?"disabled":""}>↑ Move up</button><button class="btn" id="rDown" ${lst.indexOf(r)>=lst.length-1?"disabled":""}>↓ Move down</button><span class="histnote">Position ${lst.indexOf(r)+1} of ${lst.length}</span></div></div>`}
+    ${isNew?"":`<p class="histnote">Renaming or moving keeps all planned and done videos${kind==="ind"?" and the photo":""} for this ${what}.</p>`}
     <div class="actions">${isNew?"<span></span>":`<span style="display:flex;gap:8px"><button class="btn danger" id="rDel">Remove</button>${kind==="ind"?`<button class="btn" id="rHist">History</button>`:""}</span>`}
       <span style="display:flex;gap:8px"><button class="btn" id="rCancel">Cancel</button><button class="btn primary" id="rSave">Save</button></span></div>
     <div id="confirmBox"></div>`);
   const inp=$("#r-name"); inp.focus(); inp.select();
+  const ph=$("#r-photo"); let photoTouched=false;
+  if(ph){ph.onchange=()=>{photoTouched=true;$("#r-av").innerHTML=avatar({name:inp.value||r.name,photo:ph.value},"lg")};
+    if(isNew)inp.oninput=()=>{if(photoTouched)return;const k=autoPhoto(inp.value);ph.value=k;$("#r-av").innerHTML=avatar({name:inp.value,photo:k},"lg")}}
   const doSave=()=>{const n=inp.value.trim().replace(/\s+/g," ");if(!n){inp.focus();return}
-    r.name=n; if(isNew)lst.push(r); delete lists.gone[r.id]; saveLists(); closeModal(); render()};
+    r.name=n; if(ph)r.photo=ph.value; if(isNew)lst.push(r); delete lists.gone[r.id]; saveLists(); closeModal(); render()};
+  const move=dir=>{const i=lst.indexOf(r),j=i+dir;if(j<0||j>=lst.length)return;lst.splice(i,1);lst.splice(j,0,r);saveLists();render();openRow(r.id)};
+  if($("#rUp")){$("#rUp").onclick=()=>move(-1);$("#rDown").onclick=()=>move(1)}
   $("#rSave").onclick=doSave; inp.onkeydown=e=>{if(e.key==="Enter")doSave()};
   $("#rCancel").onclick=closeModal;
   if(!isNew){
     if($("#rHist"))$("#rHist").onclick=()=>openHistory(id);
     $("#rDel").onclick=()=>{$("#confirmBox").innerHTML=`<div class="confirm">Remove ${esc(r.name)} from the list? Past videos stay in History.<button class="btn danger" id="yesDel">Remove</button><button class="btn" id="noDel">Keep</button></div>`;
-      $("#yesDel").onclick=()=>{lists.gone[r.id]=r.name;lst.splice(lst.indexOf(r),1);saveLists();closeModal();render()};
+      $("#yesDel").onclick=()=>{lists.gone[r.id]=r.name;if(r.photo){lists.gonePh=lists.gonePh||{};lists.gonePh[r.id]=r.photo}lst.splice(lst.indexOf(r),1);saveLists();closeModal();render()};
       $("#noDel").onclick=()=>{$("#confirmBox").innerHTML=""}};
   }
 }
@@ -1271,9 +1307,10 @@ function makePdf(){
   let stored=null, sl=null;
   try{stored=JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){}
   try{sl=JSON.parse(localStorage.getItem(LISTS_KEY)||"null")}catch(e){}
-  if(sl&&Array.isArray(sl.ind)){lists={ind:sl.ind,grp:sl.grp||[],gone:sl.gone||{}};mcs=stored||{}}
+  if(sl&&Array.isArray(sl.ind)){lists={ind:sl.ind,grp:sl.grp||[],gone:sl.gone||{},gonePh:sl.gonePh||{}};mcs=stored||{}}
   else{firstStart();mcs=stored||{}}
   if(!stored)persist();
+  let ph=false;lists.ind.forEach(p=>{if(p.photo===undefined){p.photo=autoPhoto(p.name);ph=true}});if(ph)saveLists();
   curId=sorted().slice(-1)[0]?._id||null; loaded=true;
   setStatus("Data is saved in this browser on this device. Export a backup regularly.");
   render();
