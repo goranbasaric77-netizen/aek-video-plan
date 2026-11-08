@@ -193,7 +193,7 @@ td.cell.mdtint{background:var(--match-soft)}
 .pchip.pl{border:1.5px dashed var(--plan)}
 .pchip.dn{border:1.5px solid var(--accent)}
 .dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
-.dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.bad{background:var(--bad)}
+.dot.ok{background:var(--ok)} .dot.warn{background:var(--accent)} .dot.bad{background:var(--bad)}
 .modal.wide{width:min(720px,100%)}
 .modal .sub{margin:-8px 0 0;color:var(--muted);font-size:12px}
 .mini{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
@@ -217,13 +217,14 @@ td.cell.mdtint{background:var(--match-soft)}
 .plegend .lg.dn{background:var(--accent-soft);border:1.5px solid var(--accent)}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:6px}
 .pcard{--st:var(--muted);display:flex;align-items:center;gap:8px;min-width:0;border:1px solid var(--line);background:var(--surface2);color:var(--ink);border-radius:6px;padding:7px 10px 7px 12px;cursor:pointer;text-align:left;font:500 13px var(--f-body);box-shadow:inset 3px 0 0 var(--st)}
-.pcard.ok{--st:var(--ok)} .pcard.warn{--st:var(--warn)} .pcard.bad{--st:var(--bad)}
+.pcard.ok{--st:var(--ok)} .pcard.warn{--st:var(--accent)} .pcard.bad{--st:var(--bad)}
 .pcard:hover{border-color:var(--accent)}
 .pcard.pl{border:1.5px dashed var(--plan)}
 .pcard.dn{border:1.5px solid var(--accent);background:var(--accent-soft)}
 .pnum{font:600 11px var(--f-mono);color:var(--muted);min-width:16px;text-align:right;flex:none}
 .pname{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pdays{flex:none;font:600 11px var(--f-mono);color:var(--st)}
+.pcard.warn .pdays{color:var(--plan)}
 .pdays.none{color:var(--muted);font-weight:500}
 @media (max-width:560px){.pgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.plegend{margin-left:0}}
 .howto{display:grid;grid-template-columns:1.35fr 1fr 1.25fr;gap:8px}
@@ -701,7 +702,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 const MDS=["MD-6","MD-5","MD-4","MD-3","MD-2","MD-1","MD","MD+1","MD+2","MD+3","OFF"];
 const SESS=["Topic","PMT","Recovery","Activation","Off","Travel"];
-const WATCH=10, GAP=21; // days since last video
+const WATCH=20, GAP=30; // days since last video: 0-20 green, 21-30 yellow, 31+ red
 const PLAYERS_DEFAULT=["1 Strakosha","41 Balamotis","91 Brignoli","2 Moukoudi","3 Pilios","12 Rota","21 Vida","22 Lykogiannis","44 Relvas","6 Kairinen","8 Gacinovic","14 Majer","16 Arriaga","18 Marin","20 Mantalos","27 Vitalis","9 Jovic","10 Zubkov","11 Koita","19 Varga","23 Joao Mario","90 Zini"];
 const UNITS_DEFAULT=["Back line","2 CM","Midfielders line (4 players)","2 CF","Back line + 2 CM","CB + FB","FB + W","2 W + 2 CF","2 CM + CF"];
 const KIND={ind:{n:"Individual video",row:"player",cls:"off",pre:"p"},grp:{n:"Group video",row:"team unit",cls:"def",pre:"u"}};
@@ -917,7 +918,7 @@ function groupEntriesFor(pid){
 /* ---------- players strip (planner + history) ---------- */
 function playersStrip(m,ref,week,extra){
   let h=`<div class="pstrip"><div class="pstrip-h"><strong>Players</strong><span class="phint">Tap a player for the full history</span>
-    <div class="plegend"><span><i class="dot ok"></i>0 to ${WATCH} days</span><span><i class="dot warn"></i>${WATCH+1} to ${GAP}</span><span><i class="dot bad"></i>Over ${GAP} days or never (–)</span>${week?`<span><i class="lg pl"></i>Planned this week</span><span><i class="lg dn"></i>Done this week</span>`:""}</div></div>${extra||""}<div class="pgrid">`;
+    <div class="plegend"><span><i class="dot ok"></i>0 to ${WATCH} days</span><span><i class="dot warn"></i>${WATCH+1} to ${GAP} days</span><span><i class="dot bad"></i>${GAP+1}+ days or never (–)</span>${week?`<span><i class="lg pl"></i>Planned this week</span><span><i class="lg dn"></i>Done this week</span>`:""}</div></div>${extra||""}<div class="pgrid">`;
   for(const p of lists.ind){const l=lastDone(p.id,ref),d=l?diffDays(l,ref):null,s=stat(d),[dn,pl]=m?countRow(m,p.id):[0,0];
     const mm=/^(\d+)\s+(.+)$/.exec(p.name), num=mm?mm[1]:"", nm=mm?mm[2]:p.name;
     h+=`<button class="pcard ${s.c} ${dn?"dn":pl?"pl":""}" data-hist="${p.id}" aria-label="History of ${esc(p.name)}" title="${esc(p.name)}: ${d===null?"no individual video yet":"last video "+d+" days ago"}">${avatar(p)}<span class="pnum">${esc(num)}</span><span class="pname">${esc(nm)}</span>${d===null?`<span class="pdays none">–</span>`:`<span class="pdays">${d}d</span>`}</button>`}
