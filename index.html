@@ -703,7 +703,7 @@ const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunda
 const MDS=["MD-6","MD-5","MD-4","MD-3","MD-2","MD-1","MD","MD+1","MD+2","MD+3","OFF"];
 const SESS=["Topic","PMT","Recovery","Activation","Off","Travel"];
 const WATCH=20, GAP=30; // days since last video: 0-20 green, 21-30 yellow, 31+ red
-const PLAYERS_DEFAULT=["1 Strakosha","41 Balamotis","91 Brignoli","2 Moukoudi","3 Pilios","12 Rota","21 Vida","22 Lykogiannis","44 Relvas","6 Kairinen","8 Gacinovic","14 Majer","16 Arriaga","18 Marin","20 Mantalos","27 Vitalis","9 Jovic","10 Zubkov","11 Koita","19 Varga","23 Joao Mario","90 Zini"];
+const PLAYERS_DEFAULT=["1 Strakosha","41 Balamotis","91 Brignoli","2 Moukoudi","3 Pilios","12 Rota","21 Vida","22 Lykogiannis","44 Relvas","6 Kairinen","8 Gacinovic","14 Majer","16 Arriaga","18 Marin","20 Mantalos","27 Vitalis","9 Jovic","10 Zubkov","11 Koita","19 Varga","23 Joao Mario","90 Zini","99 Argyriou","57 Christakopoulos"];
 const UNITS_DEFAULT=["Back line","2 CM","Midfielders line (4 players)","2 CF","Back line + 2 CM","CB + FB","FB + W","2 W + 2 CF","2 CM + CF"];
 const KIND={ind:{n:"Individual video",row:"player",cls:"off",pre:"p"},grp:{n:"Group video",row:"team unit",cls:"def",pre:"u"}};
 const KEY="aek-video-v1", LISTS_KEY="aek-video-lists";
@@ -1308,10 +1308,10 @@ function makePdf(){
   let stored=null, sl=null;
   try{stored=JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){}
   try{sl=JSON.parse(localStorage.getItem(LISTS_KEY)||"null")}catch(e){}
-  if(sl&&Array.isArray(sl.ind)){lists={ind:sl.ind,grp:sl.grp||[],gone:sl.gone||{},gonePh:sl.gonePh||{}};mcs=stored||{}}
+  if(sl&&Array.isArray(sl.ind)){lists=Object.assign({},sl,{ind:sl.ind,grp:sl.grp||[],gone:sl.gone||{},gonePh:sl.gonePh||{}});mcs=stored||{}}
   else{firstStart();mcs=stored||{}}
   if(!stored)persist();
-  let ph=false;lists.ind.forEach(p=>{if(p.photo===undefined){p.photo=autoPhoto(p.name);ph=true}});/* 18.11.2026: new photos (Argyriou, Christakopoulos) are assigned once to players that had none */if(lists.phv!==3){const novo=["argyriou","christakopoulos"];lists.ind.forEach(p=>{if(!p.photo){const k=autoPhoto(p.name);if(novo.includes(k))p.photo=k}});lists.phv=3;ph=true}/* 18.11.2026: Argyriou and Christakopoulos go to the bottom of the player list, once per device */if(lists.ordv!==2){const dno=["argyriou","christakopoulos"],k=p=>dno.indexOf(p.photo||autoPhoto(p.name));const ost=lists.ind.filter(p=>k(p)<0),mladi=lists.ind.filter(p=>k(p)>=0).sort((x,y)=>k(x)-k(y));lists.ind=ost.concat(mladi);lists.ordv=2;ph=true}if(ph)saveLists();
+  let ph=false;lists.ind.forEach(p=>{if(p.photo===undefined){p.photo=autoPhoto(p.name);ph=true}});/* 18.11.2026: new photos (Argyriou, Christakopoulos) are assigned once to players that had none */if(lists.phv!==3){const novo=["argyriou","christakopoulos"];lists.ind.forEach(p=>{if(!p.photo){const k=autoPhoto(p.name);if(novo.includes(k))p.photo=k}});lists.phv=3;ph=true}/* 18.11.2026: Argyriou and Christakopoulos are added to the squad with photo if this device does not have them, once */if(lists.addv!==1){[["argyriou","99 Argyriou"],["christakopoulos","57 Christakopoulos"]].forEach(([k,n])=>{if(!lists.ind.some(p=>(p.photo||autoPhoto(p.name))===k)){const id="p_"+k;lists.ind.push({id,name:n,photo:k});delete lists.gone[id]}});lists.addv=1;ph=true}/* 18.11.2026: Argyriou and Christakopoulos go to the bottom of the player list, once per device */if(lists.ordv!==3){const dno=["argyriou","christakopoulos"],k=p=>dno.indexOf(p.photo||autoPhoto(p.name));const ost=lists.ind.filter(p=>k(p)<0),mladi=lists.ind.filter(p=>k(p)>=0).sort((x,y)=>k(x)-k(y));lists.ind=ost.concat(mladi);lists.ordv=3;ph=true}if(ph)saveLists();
   curId=sorted().slice(-1)[0]?._id||null; loaded=true;
   setStatus("Data is saved in this browser on this device. Export a backup regularly.");
   render();
