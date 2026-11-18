@@ -854,7 +854,7 @@ function autoFill(m){
 
 /* ---------- player photos (photos/<key>.webp). The photo key is saved on the player itself,
    so it moves with the player when the order or the name changes. ---------- */
-const PHOTOS=["alexiou","ariaga","balamotis","brignoli","gacinovic","georgiev","joaomario","jovic","kairinen","kaloskamis","koita","kutesa","likogiannis","majer","mantalos","marin","moukoudi","pilios","relvas","rota","sahabo","strakosha","varga","vida","vitalis","zine","zubkov"];
+const PHOTOS=["alexiou","argyriou","ariaga","balamotis","brignoli","christakopoulos","gacinovic","georgiev","joaomario","jovic","kairinen","kaloskamis","koita","kutesa","likogiannis","majer","mantalos","marin","moukoudi","pilios","relvas","rota","sahabo","strakosha","varga","vida","vitalis","zine","zubkov"];
 const PHOTO_ALIAS={lykogiannis:"likogiannis",arriaga:"ariaga",zini:"zine",mario:"joaomario"};
 function autoPhoto(name){
   const n=String(name||"").replace(/^\d+\s+/,"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
@@ -1311,7 +1311,7 @@ function makePdf(){
   if(sl&&Array.isArray(sl.ind)){lists={ind:sl.ind,grp:sl.grp||[],gone:sl.gone||{},gonePh:sl.gonePh||{}};mcs=stored||{}}
   else{firstStart();mcs=stored||{}}
   if(!stored)persist();
-  let ph=false;lists.ind.forEach(p=>{if(p.photo===undefined){p.photo=autoPhoto(p.name);ph=true}});if(ph)saveLists();
+  let ph=false;lists.ind.forEach(p=>{if(p.photo===undefined){p.photo=autoPhoto(p.name);ph=true}});/* 18.11.2026: new photos (Argyriou, Christakopoulos) are assigned once to players that had none */if(lists.phv!==2){const novo=["argyriou","christakopoulos"];lists.ind.forEach(p=>{if(!p.photo){const k=autoPhoto(p.name);if(novo.includes(k))p.photo=k}});lists.phv=2;ph=true}if(ph)saveLists();
   curId=sorted().slice(-1)[0]?._id||null; loaded=true;
   setStatus("Data is saved in this browser on this device. Export a backup regularly.");
   render();
